@@ -1,29 +1,58 @@
 package blockchain
 
+import (
+	"crypto/sha256"
+	"fmt"
+	"sync"
+)
+
 type block struct {
-	// save data in the blcok only
-	data     string
-	hash     string // connected
-	prevHash string
+	Data     string
+	Hash     string // connected
+	PrevHash string
 }
 
-// hash function is one-way function
-// if the data of hash is changed in the middle
-// all of the hash will be changed after that hash
-
 type blockchain struct {
-	blocks []block
+	blocks []*block // value 를 copy 하면 너무 길어지기에 pointing 하게 만듦
 }
 
 var b *blockchain // will not be shared
+var once sync.Once
 
-// singletone pattern
-// If main function wants a blockchain
-// it will return current blockchain instance without making another one.
+func (b *block) calculateHash() {
+	hash := sha256.Sum256([]byte(b.Data + b.PrevHash))
+	b.Hash = fmt.Sprintf("%x", hash)
+}
+
+func getLastHash() string {
+	totalBlocks := len(GetBlockchain().blocks)
+	if totalBlocks == 0 {
+		return ""
+	}
+	return GetBlockchain().blocks[totalBlocks-1].Hash
+}
+
+func createBlock(data string) *block {
+	newBlock := block{data, "", getLastHash()}
+	newBlock.calculateHash()
+	return &newBlock
+}
+
+func (b *blockchain) AddBlock(data string) {
+	b.blocks = append(b.blocks, createBlock(data))
+}
+
 func GetBlockchain() *blockchain {
 	if b == nil {
-		// check b is initialized
-		b = &blockchain{}
+		once.Do(func() {
+			// check b is initialized only one time
+			b = &blockchain{}
+			b.AddBlock("Genesis")
+		})
 	}
 	return b
+}
+
+func (b *blockchain) AllBlocks() []*block {
+	return b.blocks
 }
