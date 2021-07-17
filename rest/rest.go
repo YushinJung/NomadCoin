@@ -10,7 +10,7 @@ import (
 	"github.com/YushinJung/NomadCoin/utils"
 )
 
-const port string = ":4000"
+var port string
 
 type url string
 
@@ -69,9 +69,11 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Start() {
-	http.HandleFunc("/", documentation)
-	http.HandleFunc("/blocks", blocks)
+func Start(aPort int) {
+	handler := http.NewServeMux()
+	port = fmt.Sprintf(":%d", aPort)
+	handler.HandleFunc("/", documentation)
+	handler.HandleFunc("/blocks", blocks)
 	fmt.Printf("Listening on http://localhost%s", port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	log.Fatal(http.ListenAndServe(port, handler))
 }

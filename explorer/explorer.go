@@ -44,14 +44,15 @@ func add(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func Start() {
+func Start(port int) {
+	handler := http.NewServeMux()
 	//함수로 부르지 않고 저장되어 있는 template을 가져올 것이다
 	templates = template.Must(template.ParseGlob(templateDir + "pages/*.gohtml"))
 	// loaded all file in "pages folder"
 	templates = template.Must(templates.ParseGlob(templateDir + "partials/*.gohtml"))
 	// templates 는 template Object이고, 다른 template를 load 할 수 있음.
-	http.HandleFunc("/", home)
-	http.HandleFunc("/add", add)
-	fmt.Printf("listening on http://localhost%s\n", port)
-	log.Fatal(http.ListenAndServe(port, nil)) // log.Fatal will stop if there is error from input
+	handler.HandleFunc("/", home)
+	handler.HandleFunc("/add", add)
+	fmt.Printf("listening on http://localhost:%d\n", port)
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), handler)) // log.Fatal will stop if there is error from input
 }

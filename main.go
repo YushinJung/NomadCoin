@@ -1,7 +1,11 @@
 package main
 
-import "github.com/YushinJung/NomadCoin/rest"
+import (
+	"github.com/YushinJung/NomadCoin/explorer"
+	"github.com/YushinJung/NomadCoin/rest"
+)
 
 func main() {
-	rest.Start()
+	go explorer.Start(3000)
+	rest.Start(4000)
 }
