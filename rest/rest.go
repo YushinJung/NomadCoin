@@ -59,7 +59,8 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Description: "See A Block",
 		},
 	}
-	rw.Header().Add("Content-Type", "application/json")
+	//rw.Header().Add("Content-Type", "application/json")
+	// middleware 추가로 필요 없어짐.
 	// b, err := json.Marshal(data)
 	// utils.HandleErr(err)
 	// fmt.Fprintf(rw, "%s", b)
@@ -69,7 +70,8 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 func blocks(rw http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
-		rw.Header().Add("Content-Type", "application/json")
+		//rw.Header().Add("Content-Type", "application/json")
+		//middleware 추가로 필요 없어짐.
 		json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
 	case "POST":
 		var aBB addBlockBody
@@ -93,9 +95,20 @@ func block(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func jsonConentTypeMiddelWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		// do stuff here
+		rw.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(rw, r)
+		// point going next
+	})
+	// handler 는 interface 이다. 이 interface는 ServeHTTP를
+}
+
 func Start(aPort int) {
-	router := mux.NewRouter()
 	port = fmt.Sprintf(":%d", aPort)
+	router := mux.NewRouter()
+	router.Use(jsonConentTypeMiddelWare)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
 	router.HandleFunc("/blocks/{height:[0-9]+}", block).Methods("GET")
