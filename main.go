@@ -1,7 +1,11 @@
 package main
 
-import "github.com/YushinJung/NomadCoin/cli"
+import (
+	"github.com/YushinJung/NomadCoin/blockchain"
+)
 
 func main() {
-	cli.Start()
+	blockchain.Blockchain().AddBlock("First")
+	blockchain.Blockchain().AddBlock("Second")
+	blockchain.Blockchain().AddBlock("Third")
 }
