@@ -23,8 +23,6 @@ func Start() {
 
 	flag.Parse()
 
-	fmt.Println(*port, *mode)
-
 	switch *mode {
 	case "rest":
 		// start with rest api

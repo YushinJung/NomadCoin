@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/YushinJung/NomadCoin/blockchain"
-	"github.com/YushinJung/NomadCoin/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -54,7 +52,7 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Payload:     "data:string",
 		},
 		{
-			URL:         url("/blocks/{height}"),
+			URL:         url("/blocks/{hash}"),
 			Method:      "GET",
 			Description: "See A Block",
 		},
@@ -72,21 +70,22 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 	case "GET":
 		//rw.Header().Add("Content-Type", "application/json")
 		//middleware 추가로 필요 없어짐.
-		json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
+		return
+		// json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
 	case "POST":
-		var aBB addBlockBody
-		utils.HandleErr(json.NewDecoder(r.Body).Decode(&aBB))
+		return
+		// var aBB addBlockBody
+		// utils.HandleErr(json.NewDecoder(r.Body).Decode(&aBB))
 		// r.Body 에서 받아와서 addBlockBody 에 넣을 것
-		blockchain.GetBlockchain().AddBlock(aBB.Message)
-		rw.WriteHeader(http.StatusCreated)
+		// blockchain.GetBlockchain().AddBlock(aBB.Message)
+		// rw.WriteHeader(http.StatusCreated)
 	}
 }
 
 func block(rw http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r) // map[id: ]
-	id, err := strconv.Atoi(vars["height"])
-	utils.HandleErr(err)
-	block, err := blockchain.GetBlockchain().GetBlock(id)
+	hash := vars["hash"]
+	block, err := blockchain.FindBlock(hash)
 	ecoder := json.NewEncoder(rw)
 	if err == blockchain.ErrNotFound {
 		ecoder.Encode(errorResponse{ErrorMessage: fmt.Sprint(err)})
@@ -111,7 +110,7 @@ func Start(aPort int) {
 	router.Use(jsonConentTypeMiddelWare)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
-	router.HandleFunc("/blocks/{height:[0-9]+}", block).Methods("GET")
+	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", block).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }
