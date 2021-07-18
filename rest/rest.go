@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/YushinJung/NomadCoin/blockchain"
+	"github.com/YushinJung/NomadCoin/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -70,15 +71,14 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 	case "GET":
 		//rw.Header().Add("Content-Type", "application/json")
 		//middleware 추가로 필요 없어짐.
-		return
 		// json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
+		json.NewEncoder(rw).Encode(blockchain.Blockchain().Blocks())
 	case "POST":
-		return
-		// var aBB addBlockBody
-		// utils.HandleErr(json.NewDecoder(r.Body).Decode(&aBB))
+		var aBB addBlockBody
+		utils.HandleErr(json.NewDecoder(r.Body).Decode(&aBB))
 		// r.Body 에서 받아와서 addBlockBody 에 넣을 것
-		// blockchain.GetBlockchain().AddBlock(aBB.Message)
-		// rw.WriteHeader(http.StatusCreated)
+		blockchain.Blockchain().AddBlock(aBB.Message)
+		rw.WriteHeader(http.StatusCreated) // header로 created 됐다고 알려주는 것
 	}
 }
 

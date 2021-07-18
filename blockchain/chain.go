@@ -1,7 +1,6 @@
 package blockchain
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/YushinJung/NomadCoin/db"
@@ -33,6 +32,24 @@ func (b *blockchain) AddBlock(data string) {
 	b.persist()
 }
 
+func (b *blockchain) Blocks() []*Block {
+	var blocks []*Block
+	hashCursor := b.NewestHash
+	for {
+		block, _ := FindBlock(hashCursor)
+		blocks = append(blocks, block)
+		if block.PrevHash != "" {
+			hashCursor = block.PrevHash
+		} else {
+			break
+		}
+	}
+	for i, j := 0, len(blocks)-1; i < j; i, j = i+1, j-1 {
+		blocks[i], blocks[j] = blocks[j], blocks[i]
+	}
+	return blocks
+}
+
 func Blockchain() *blockchain {
 	if b == nil {
 		once.Do(func() {
@@ -49,6 +66,5 @@ func Blockchain() *blockchain {
 			}
 		})
 	}
-	fmt.Println(b.NewestHash)
 	return b
 }

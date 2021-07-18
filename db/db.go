@@ -34,6 +34,9 @@ func DB() *bolt.DB {
 	return db
 }
 
+func Close() {
+	DB().Close()
+}
 func SaveBlock(hash string, data []byte) {
 	// save block to block bucket
 	// fmt.Printf("Saving Block %s\nData: %b", hash, data)
