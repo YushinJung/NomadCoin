@@ -4,7 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"runtime"
 
 	"github.com/YushinJung/NomadCoin/explorer"
 	"github.com/YushinJung/NomadCoin/rest"
@@ -18,9 +17,9 @@ func usage() {
 	// this was needed when ending main.go when user didn't enter any flags
 	// but when we use defer, which runs the code after every function,
 	// "os.Exit(0)" runs before "defer function" runs.
-	// os.Exit(0)
+	os.Exit(0)
 	// so we use
-	runtime.Goexit()
+	// runtime.Goexit()
 	// this runs after "defer function" runs.
 }
 
