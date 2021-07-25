@@ -10,7 +10,7 @@ http://localhost:4000/blocks
 POST http://localhost:4000/blocks
 
 {
-    "message": "Fast Block"
+    "message": "Second Block"
 }
 
 ###

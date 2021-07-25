@@ -31,8 +31,8 @@ func (b *blockchain) persist() {
 	db.SaveCheckpoint(utils.ToBytes(b))
 }
 
-func (b *blockchain) AddBlock(data string) {
-	block := createBlock(data, b.NewestHash, b.Height+1)
+func (b *blockchain) AddBlock() {
+	block := createBlock(b.NewestHash, b.Height+1)
 	// by adding block we should update newesthash and height
 	b.NewestHash = block.Hash
 	b.Height = block.Height
@@ -98,7 +98,7 @@ func Blockchain() *blockchain {
 			if checkpoint == nil {
 				// nothing is at the block chain
 				// height will be 0
-				b.AddBlock("Genesis")
+				b.AddBlock()
 			} else {
 				// restore b from bytes
 				b.restore(checkpoint)

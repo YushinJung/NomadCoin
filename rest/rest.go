@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/YushinJung/NomadCoin/blockchain"
-	"github.com/YushinJung/NomadCoin/utils"
 	"github.com/gorilla/mux"
 )
 
@@ -25,9 +24,6 @@ type urlDescription struct {
 	Method      string `json:"method"`
 	Description string `json:"description"`
 	Payload     string `json:"payload,omitempty"`
-}
-type addBlockBody struct {
-	Message string
 }
 
 type errorResponse struct {
@@ -79,10 +75,7 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 		// json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
 		json.NewEncoder(rw).Encode(blockchain.Blockchain().Blocks())
 	case "POST":
-		var aBB addBlockBody
-		utils.HandleErr(json.NewDecoder(r.Body).Decode(&aBB))
-		// r.Body 에서 받아와서 addBlockBody 에 넣을 것
-		blockchain.Blockchain().AddBlock(aBB.Message)
+		blockchain.Blockchain().AddBlock()
 		rw.WriteHeader(http.StatusCreated) // header로 created 됐다고 알려주는 것
 	}
 }
