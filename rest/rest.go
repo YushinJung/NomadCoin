@@ -99,7 +99,7 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 		//rw.Header().Add("Content-Type", "application/json")
 		//middleware 추가로 필요 없어짐.
 		// json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
-		json.NewEncoder(rw).Encode(blockchain.Blockchain().Blocks())
+		json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.Blockchain()))
 	case "POST":
 		blockchain.Blockchain().AddBlock()
 		rw.WriteHeader(http.StatusCreated) // header로 created 됐다고 알려주는 것
@@ -138,13 +138,13 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 	total := r.URL.Query().Get("total")
 	switch total {
 	case "true": // total amount needs to get extra struct since it was not defined before
-		amount := blockchain.Blockchain().BalanceByAddress(address)
+		amount := blockchain.BalanceByAddress(address, blockchain.Blockchain())
 		json.NewEncoder(rw).Encode(balanceResponse{
 			Address: address,
 			Balance: amount,
 		})
 	default:
-		utils.HandleErr(json.NewEncoder(rw).Encode(blockchain.Blockchain().UTxOutsByAddress(address)))
+		utils.HandleErr(json.NewEncoder(rw).Encode(blockchain.UTxOutsByAddress(address, blockchain.Blockchain())))
 	}
 }
 
