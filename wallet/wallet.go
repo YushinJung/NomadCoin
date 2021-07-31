@@ -2,11 +2,10 @@ package wallet
 
 import (
 	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/x509"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 
 	"github.com/YushinJung/NomadCoin/utils"
 )
@@ -18,29 +17,30 @@ const (
 )
 
 func Start() {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	// privateKey 에 public key 가 들어있는 구조
-	keyAsBytes, err := x509.MarshalECPrivateKey(privateKey)
-
-	fmt.Printf("%x\n", keyAsBytes)
-
+	// load private key
+	privateByte, err := hex.DecodeString(privateKey)
+	utils.HandleErr(err)
+	// byte을 바로 넘겨줄 수도 있지만, 해당 function은 제대로된 형태인지 확인 안하고,
+	// private key로 바꾸기 때문에, file이 잘 못 되어도 진행이 된다.
+	// x509.ParseECPrivateKey([]byte(privateKey))
+	restoredKey, err := x509.ParseECPrivateKey(privateByte)
 	utils.HandleErr(err)
 
-	byteHash, err := hex.DecodeString(hashedMessage)
+	// restore signature
+	sigBytes, err := hex.DecodeString(signature)
+	utils.HandleErr(err)
+	rBytes := sigBytes[:len(sigBytes)/2]
+	sBytes := sigBytes[len(sigBytes)/2:]
 
+	var bigR, bigS = big.Int{}, big.Int{}
+	bigR.SetBytes(rBytes)
+	bigS.SetBytes(sBytes)
+
+	// restore hash
+	hashBytes, err := hex.DecodeString(hashedMessage)
 	utils.HandleErr(err)
 
-	r, s, err := ecdsa.Sign(rand.Reader, privateKey, byteHash)
-
-	signature := append(r.Bytes(), s.Bytes()...)
-
-	fmt.Printf("%x\n", signature)
-
-	fmt.Println(r.Bytes(), s.Bytes())
-
-	utils.HandleErr(err)
-
-	ok := ecdsa.Verify(&privateKey.PublicKey, byteHash, r, s)
-
-	fmt.Print(ok)
+	// verify
+	ok := ecdsa.Verify(&restoredKey.PublicKey, hashBytes, &bigR, &bigS)
+	fmt.Println(ok)
 }
