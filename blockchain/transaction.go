@@ -18,19 +18,20 @@ type mempool struct {
 var Mempool *mempool = &mempool{}
 
 type Tx struct {
-	Id        string   `json:"id"`
+	ID        string   `json:"id"`
 	Timestamp int      `json:"timestamp"`
 	TxIns     []*TxIn  `json:"txins"`
 	TxOuts    []*TxOut `json:"txouts"`
 }
 
 func (t *Tx) getId() {
-	t.Id = utils.Hash(t)
+	t.ID = utils.Hash(t)
 }
 
-type TxIn struct {
-	Owner  string `json:"owner"`
-	Amount int    `json:"amount"`
+type TxIn struct { // 특정 txid 에서 어떤 index 의 output을 사용하는지 알려줌.
+	TxID  string `json:"txid"`
+	Index int    `json:"index"`
+	Owner string `json:"owner"`
 }
 
 type TxOut struct {
@@ -38,15 +39,32 @@ type TxOut struct {
 	Amount int    `json:"amount"`
 }
 
+type UTxOut struct {
+	TxID   string `json:"txid"`
+	Index  int    `json:"index"`
+	Amount int    `json:"amount"`
+}
+
+func isOnMempool(uTxOut *UTxOut) bool {
+	exists := false
+	for _, tx := range Mempool.Txs {
+		for _, input := range tx.TxIns {
+			if input.TxID == uTxOut.TxID && input.Index == uTxOut.Index {
+				exists = true
+			}
+		}
+	}
+	return exists
+}
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
-		{"COINBASE", minerReward},
+		{"", -1, "COINBASE"},
 	}
 	txOuts := []*TxOut{
 		{address, minerReward},
 	}
 	tx := Tx{
-		Id:        "",
+		ID:        "",
 		Timestamp: int(time.Now().Unix()),
 		TxIns:     txIns,
 		TxOuts:    txOuts,
@@ -56,40 +74,32 @@ func makeCoinbaseTx(address string) *Tx {
 }
 
 func makeTx(from, to string, amount int) (*Tx, error) {
-	// user 의 전체 transaction output을 통해 balance를 확인하면 다음 transaction의 input이 된다.
-	// 충분히 갖고 있는지 확인해보자
 	if Blockchain().BalanceByAddress(from) < amount {
 		return nil, errors.New("not enough money")
 	}
-	// 모든 output을 고민할 필요 없이 전달할 amount 까지만 확인하면 된다.
-	var txIns []*TxIn
 	var txOuts []*TxOut
-
+	var txIns []*TxIn
 	total := 0
-	oldTxOuts := Blockchain().TxOutsByAddress(from)
-	for _, txOut := range oldTxOuts {
-		if total > amount {
+	uTxOuts := Blockchain().UTxOutsByAddress(from)
+	for _, uTxOut := range uTxOuts {
+		if total > amount { // if we have enought amount break
 			break
 		}
-		txIn := &TxIn{txOut.Owner, txOut.Amount}
+		// still "from" is not secured yet
+		txIn := &TxIn{uTxOut.TxID, uTxOut.Index, from}
 		txIns = append(txIns, txIn)
-		total += txOut.Amount
+		total += uTxOut.Amount
 	}
-	change := total - amount
-	if change != 0 {
-		changeTxOut := &TxOut{
-			Owner:  from,
-			Amount: change,
-		}
+	// for "from" address
+	if change := total - amount; change != 0 {
+		changeTxOut := &TxOut{from, change}
 		txOuts = append(txOuts, changeTxOut)
 	}
-	txOut := &TxOut{
-		Owner:  to,
-		Amount: amount,
-	}
+	// for "to" address
+	txOut := &TxOut{to, amount}
 	txOuts = append(txOuts, txOut)
 	tx := &Tx{
-		Id:        "",
+		ID:        "",
 		Timestamp: int(time.Now().Unix()),
 		TxIns:     txIns,
 		TxOuts:    txOuts,
@@ -108,4 +118,12 @@ func (m *mempool) AddTx(to string, amount int) error {
 	}
 	m.Txs = append(m.Txs, tx)
 	return nil
+}
+
+func (m *mempool) TxToConfirm() []*Tx {
+	coinbase := makeCoinbaseTx("Yushin") // coin 채굴 시
+	txs := m.Txs                         // mempool의 모든 transaction을
+	txs = append(txs, coinbase)          // 하나로 합쳐서 전달
+	m.Txs = nil                          // mempool은 비우자
+	return txs
 }
