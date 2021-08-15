@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/YushinJung/NomadCoin/utils"
+	"github.com/YushinJung/NomadCoin/wallet"
 )
 
 const (
@@ -114,7 +115,7 @@ func (m *mempool) AddTx(to string, amount int) error {
 	// be called by API
 	// for whom to send and amount to send
 	// if transaction cannot be made error will be called
-	tx, err := makeTx("Yushin", to, amount) // Yushin 대신 address가 들어가게 될 것
+	tx, err := makeTx(wallet.Wallet().Address, to, amount) // Yushin 대신 address가 들어가게 될 것
 	if err != nil {
 		return err
 	}
@@ -123,9 +124,9 @@ func (m *mempool) AddTx(to string, amount int) error {
 }
 
 func (m *mempool) TxToConfirm() []*Tx {
-	coinbase := makeCoinbaseTx("Yushin") // coin 채굴 시
-	txs := m.Txs                         // mempool의 모든 transaction을
-	txs = append(txs, coinbase)          // 하나로 합쳐서 전달
-	m.Txs = nil                          // mempool은 비우자
+	coinbase := makeCoinbaseTx(wallet.Wallet().Address) // coin 채굴 시
+	txs := m.Txs                                        // mempool의 모든 transaction을
+	txs = append(txs, coinbase)                         // 하나로 합쳐서 전달
+	m.Txs = nil                                         // mempool은 비우자
 	return txs
 }
