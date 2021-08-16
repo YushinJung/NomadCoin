@@ -8,6 +8,7 @@ import (
 
 	"github.com/YushinJung/NomadCoin/blockchain"
 	"github.com/YushinJung/NomadCoin/utils"
+	"github.com/YushinJung/NomadCoin/wallet"
 	"github.com/gorilla/mux"
 )
 
@@ -31,6 +32,11 @@ type balanceResponse struct {
 	Address string `json:"address"`
 	Balance int    `json:"balance"`
 }
+
+type myWalletResponse struct {
+	Address string `json:"address"`
+}
+
 type errorResponse struct {
 	ErrorMessage string `json:"errorMessage"`
 }
@@ -157,9 +163,21 @@ func transactions(rw http.ResponseWriter, r *http.Request) {
 	utils.HandleErr(json.NewDecoder(r.Body).Decode(&payload)) // json을 받아서 addTxPayLoad struct로 만들어주는 부분
 	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
 	if err != nil {
-		json.NewEncoder(rw).Encode(errorResponse{"not enough funds"})
+		rw.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(rw).Encode(errorResponse{err.Error()})
+		// if this happens we have to kill this function
+		return
 	}
 	rw.WriteHeader(http.StatusCreated)
+}
+
+func myWallet(rw http.ResponseWriter, r *http.Request) {
+	address := wallet.Wallet().Address
+	json.NewEncoder(rw).Encode(struct {
+		Address string `json:"address"`
+	}{Address: address})
+	//json.NewEncoder(rw).Encode(myWalletResponse{Address: address})
+
 }
 
 func Start(aPort int) {
@@ -171,7 +189,8 @@ func Start(aPort int) {
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
 	router.HandleFunc("/blocks/{hash:[a-f0-9]+}", block).Methods("GET")
 	router.HandleFunc("/balance/{address}", balance)
-	router.HandleFunc("/mempool", mempool)
+	router.HandleFunc("/mempool", mempool).Methods("GET")
+	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
 	fmt.Printf("Listening on http://localhost%s", port)
 	log.Fatal(http.ListenAndServe(port, router))

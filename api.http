@@ -10,15 +10,18 @@ http://localhost:4000/blocks
 POST http://localhost:4000/blocks
 
 ###
-http://localhost:4000/balance/Yushin
+http://localhost:4000/balance/dc6a2c9a6a3b575667b6ca909f461b9812ccd68743baab71ca00bfd0dddf69acbb7c174f3ba2d7b1a5c620e51f995f7112bcb11e2ead117770374dfca8a5cec5
 
 ###
 POST http://localhost:4000/transactions
 
 {
-    "to":"Sukyung", 
+    "to":"sukyung", 
     "amount":35
 }
 
 ###
 http://localhost:4000/mempool
+
+###
+http://localhost:4000/wallet

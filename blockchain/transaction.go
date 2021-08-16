@@ -25,25 +25,53 @@ type Tx struct {
 	TxOuts    []*TxOut `json:"txouts"`
 }
 
-func (t *Tx) getId() {
-	t.ID = utils.Hash(t)
-}
-
 type TxIn struct { // 특정 txid 에서 어떤 index 의 output을 사용하는지 알려줌.
-	TxID  string `json:"txid"`
-	Index int    `json:"index"`
-	Owner string `json:"owner"`
+	TxID      string `json:"txid"`
+	Index     int    `json:"index"`
+	Signature string `json:"signature"`
 }
 
 type TxOut struct {
-	Owner  string `json:"owner"`
-	Amount int    `json:"amount"`
+	Address string `json:"address"`
+	Amount  int    `json:"amount"`
 }
 
 type UTxOut struct {
 	TxID   string `json:"txid"`
 	Index  int    `json:"index"`
 	Amount int    `json:"amount"`
+}
+
+func (t *Tx) getId() {
+	t.ID = utils.Hash(t)
+}
+
+func (t *Tx) sign() {
+	for _, txIn := range t.TxIns {
+		txIn.Signature = wallet.Sign(t.ID, wallet.Wallet())
+	}
+}
+
+func validate(tx *Tx) bool {
+	// validate person who makes transaction
+	// which means validating the output of the transaction
+	valid := true
+	// input에 참조된 output이 우리가 소유하고 있음을 확인하고 싶음.
+	for _, txIn := range tx.TxIns {
+		// txIn 의 TxID는 사용한 transaction output을 만든 transaction id 임.
+		prevTx := FindTx(Blockchain(), txIn.TxID)
+		if prevTx == nil {
+			valid = false
+			break
+		}
+		address := prevTx.TxOuts[txIn.Index].Address //public key
+		valid = wallet.Verify(txIn.Signature, tx.ID, address)
+		// tx의 signature 와 ID를 address(public key)로 증명
+		if !valid {
+			break
+		}
+	}
+	return valid
 }
 
 func isOnMempool(uTxOut *UTxOut) bool {
@@ -59,6 +87,7 @@ Outer:
 	}
 	return exists
 }
+
 func makeCoinbaseTx(address string) *Tx {
 	txIns := []*TxIn{
 		{"", -1, "COINBASE"},
@@ -76,9 +105,12 @@ func makeCoinbaseTx(address string) *Tx {
 	return &tx
 }
 
+var ErrorNoMoney = errors.New("not enogh money")
+var ErrorNotValid = errors.New("Tx not valid")
+
 func makeTx(from, to string, amount int) (*Tx, error) {
 	if BalanceByAddress(from, Blockchain()) < amount {
-		return nil, errors.New("not enough money")
+		return nil, ErrorNoMoney
 	}
 	var txOuts []*TxOut
 	var txIns []*TxIn
@@ -108,6 +140,11 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 		TxOuts:    txOuts,
 	}
 	tx.getId()
+	tx.sign()
+	valid := validate(tx)
+	if !valid {
+		return nil, ErrorNotValid
+	}
 	return tx, nil
 }
 

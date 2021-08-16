@@ -42,8 +42,8 @@ func persistKey(key *ecdsa.PrivateKey) {
 	utils.HandleErr(err)
 }
 
-func restoreKey(fileName string) (key *ecdsa.PrivateKey) {
-	keyAsBytes, err := os.ReadFile(fileName)
+func restoreKey() (key *ecdsa.PrivateKey) {
+	keyAsBytes, err := os.ReadFile(walletName)
 	utils.HandleErr(err)
 	key, err = x509.ParseECPrivateKey(keyAsBytes)
 	utils.HandleErr(err)
@@ -85,7 +85,7 @@ func Verify(signature, payload, address string) bool {
 	// 그러기 위해서는 publickey 가 필요하다
 	r, s, err := restoreBigInts(signature)
 	utils.HandleErr(err)
-	x, y, err := restoreBigInts(payload)
+	x, y, err := restoreBigInts(address)
 	utils.HandleErr(err)
 	publicKey := ecdsa.PublicKey{
 		Curve: elliptic.P256(),
@@ -104,7 +104,7 @@ func Wallet() *wallet {
 		// has a wallet already?
 		if hasWalletFile() {
 			// yes -> restore from file
-			w.privateKey = restoreKey(walletName)
+			w.privateKey = restoreKey()
 
 		} else {
 			// no -> create private key, save to file
