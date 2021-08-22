@@ -18,15 +18,13 @@
         const socket = new WebSocket("ws://localhost:4000/ws")
         socket.addEventListener("close", () => console.log("closed"))
         socket.addEventListener("message", (e) => {
-            span.innerHTML = span.innerHMTL + `\n${e.data}`;
+            span.innerHTML = span.innerHTML + `\n${e.data}`;
         });
         form.addEventListener("submit", (e) => {
             e.preventDefault();
             socket.send(input.value);
+            input.value = "";
         });
-        setTimeout(() => {
-            socket.send("hello world js < go")
-        }, 5000)
     </script>
 </body>
 </html>
