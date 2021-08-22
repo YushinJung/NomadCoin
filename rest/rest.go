@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/YushinJung/NomadCoin/blockchain"
+	"github.com/YushinJung/NomadCoin/p2p"
 	"github.com/YushinJung/NomadCoin/utils"
 	"github.com/YushinJung/NomadCoin/wallet"
 	"github.com/gorilla/mux"
@@ -80,15 +81,20 @@ func documentation(rw http.ResponseWriter, r *http.Request) {
 			Description: "Get TxOuts for an Address",
 		},
 		{
-			URL:         url("mempool"),
+			URL:         url("/mempool"),
 			Method:      "Get",
 			Description: "Get Mempool",
 		},
 		{
-			URL:         url("transaction"),
+			URL:         url("/transaction"),
 			Method:      "POST",
 			Description: "Add a transaction",
 			Payload:     "data:addTxPayLoad",
+		},
+		{
+			URL:         url("/ws"),
+			Method:      "GET",
+			Description: "Upgrade to Web Sockets",
 		},
 	}
 	//rw.Header().Add("Content-Type", "application/json")
@@ -128,6 +134,16 @@ func jsonConentTypeMiddelWare(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		// do stuff here
 		rw.Header().Add("Content-Type", "application/json")
+		next.ServeHTTP(rw, r)
+		// point going next
+	})
+	// handler 는 interface 이다. 이 interface는 ServeHTTP를
+}
+
+func loggerMiddelware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		// do stuff here
+		fmt.Println(r.URL)
 		next.ServeHTTP(rw, r)
 		// point going next
 	})
@@ -183,7 +199,7 @@ func myWallet(rw http.ResponseWriter, r *http.Request) {
 func Start(aPort int) {
 	port = fmt.Sprintf(":%d", aPort)
 	router := mux.NewRouter()
-	router.Use(jsonConentTypeMiddelWare)
+	router.Use(jsonConentTypeMiddelWare, loggerMiddelware)
 	router.HandleFunc("/", documentation).Methods("GET")
 	router.HandleFunc("/status", status)
 	router.HandleFunc("/blocks", blocks).Methods("GET", "POST")
@@ -192,6 +208,7 @@ func Start(aPort int) {
 	router.HandleFunc("/mempool", mempool).Methods("GET")
 	router.HandleFunc("/wallet", myWallet).Methods("GET")
 	router.HandleFunc("/transactions", transactions).Methods("POST")
+	router.HandleFunc("/ws", p2p.Upgrade).Methods("GET")
 	fmt.Printf("Listening on http://localhost%s", port)
 	log.Fatal(http.ListenAndServe(port, router))
 }

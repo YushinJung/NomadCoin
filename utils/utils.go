@@ -10,7 +10,7 @@ import (
 
 func HandleErr(err error) {
 	if err != nil {
-		log.Panic(err)
+		log.Panic(err) // error 가 발생하면 모두 off 시킨다.
 	}
 }
 
