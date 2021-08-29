@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/YushinJung/NomadCoin/utils"
-	"github.com/boltdb/bolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 // functions to use at blockchain
