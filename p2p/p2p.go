@@ -20,8 +20,8 @@ func Upgrade(rw http.ResponseWriter, r *http.Request) {
 	}
 	conn, err := upgrader.Upgrade(rw, r, nil)
 	utils.HandleErr(err)
-	peer := initPeer(conn, ip, openPort)
-	peer.inbox <- []byte("Hello from 3000!")
+	initPeer(conn, ip, openPort)
+
 	// conn 에 바로 message를 보내면, peer를 생성할 때만 message를 쓸 수 있음.
 	// conn이 들어 있는 peer는 외부 변수로 peer의 inbox에 message를 보내고
 	// inbox(channel)에 message가 들어올 때, write기능 발생 시킴.
@@ -35,5 +35,5 @@ func AddPeer(address, port, openPort string) {
 	// 여기서는 그냥 nil을 쓰자.
 	utils.HandleErr(err)
 	peer := initPeer(conn, address, port)
-	peer.inbox <- []byte("Hello from 4000!")
+	sendNewestBlock(peer)
 }

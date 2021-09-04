@@ -1,0 +1,47 @@
+package p2p
+
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/YushinJung/NomadCoin/blockchain"
+	"github.com/YushinJung/NomadCoin/utils"
+)
+
+type MessageKind int
+
+const (
+	MessageNewestBlock MessageKind = iota
+	MessageAllBlocksRequest
+	MessageAllBlockResponse
+)
+
+type Message struct {
+	Kind    MessageKind
+	Payload []byte
+}
+
+func makeMessage(kind MessageKind, payload interface{}) []byte {
+	m := Message{
+		Kind:    kind,
+		Payload: utils.ToJSON(payload),
+	}
+	return utils.ToJSON(m)
+}
+
+func sendNewestBlock(p *peer) {
+	b, err := blockchain.FindBlock(blockchain.Blockchain().NewestHash)
+	utils.HandleErr(err)
+	m := makeMessage(MessageNewestBlock, b)
+	p.inbox <- m
+}
+
+func hanldeMsg(m *Message, p *peer) {
+	switch m.Kind {
+	// lets unmarshal depending on case
+	case MessageNewestBlock:
+		var payload blockchain.Block
+		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
+		fmt.Println(payload)
+	}
+}

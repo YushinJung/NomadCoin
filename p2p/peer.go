@@ -46,11 +46,12 @@ func (p *peer) read() {
 	// delete peer in case of error
 	defer p.close() // run after this function finishes
 	for {
-		_, m, err := p.conn.ReadMessage()
+		m := Message{}
+		err := p.conn.ReadJSON(&m) // connection에 message가 올때까지 기다린다
 		if err != nil {
 			break
 		}
-		fmt.Printf("%s", m)
+		hanldeMsg(&m, p)
 	}
 }
 
@@ -70,6 +71,8 @@ func (p *peer) write() {
 }
 
 func initPeer(conn *websocket.Conn, address, port string) *peer {
+	Peers.m.Lock()
+	defer Peers.m.Unlock()
 	key := fmt.Sprintf("%s:%s", address, port)
 	p := &peer{
 		conn:    conn,
