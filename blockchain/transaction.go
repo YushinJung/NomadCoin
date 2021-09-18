@@ -1,7 +1,10 @@
 package blockchain
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
+	"sync"
 	"time"
 
 	"github.com/YushinJung/NomadCoin/utils"
@@ -14,9 +17,18 @@ const (
 
 type mempool struct {
 	Txs []*Tx
+	m   sync.Mutex
 }
 
-var Mempool *mempool = &mempool{}
+var m *mempool = &mempool{}
+var memOnce sync.Once
+
+func Mempool() *mempool {
+	memOnce.Do(func() {
+		m = &mempool{}
+	})
+	return m
+}
 
 type Tx struct {
 	ID        string   `json:"id"`
@@ -77,7 +89,7 @@ func validate(tx *Tx) bool {
 func isOnMempool(uTxOut *UTxOut) bool {
 	exists := false
 Outer:
-	for _, tx := range Mempool.Txs {
+	for _, tx := range Mempool().Txs {
 		for _, input := range tx.TxIns {
 			if input.TxID == uTxOut.TxID && input.Index == uTxOut.Index {
 				exists = true
@@ -148,16 +160,16 @@ func makeTx(from, to string, amount int) (*Tx, error) {
 	return tx, nil
 }
 
-func (m *mempool) AddTx(to string, amount int) error {
+func (m *mempool) AddTx(to string, amount int) (*Tx, error) {
 	// be called by API
 	// for whom to send and amount to send
 	// if transaction cannot be made error will be called
 	tx, err := makeTx(wallet.Wallet().Address, to, amount) // Yushin 대신 address가 들어가게 될 것
 	if err != nil {
-		return err
+		return nil, err
 	}
 	m.Txs = append(m.Txs, tx)
-	return nil
+	return tx, nil
 }
 
 func (m *mempool) TxToConfirm() []*Tx {
@@ -166,4 +178,16 @@ func (m *mempool) TxToConfirm() []*Tx {
 	txs = append(txs, coinbase)                         // 하나로 합쳐서 전달
 	m.Txs = nil                                         // mempool은 비우자
 	return txs
+}
+
+func StatusMempool(rw http.ResponseWriter) {
+	m.m.Lock()
+	defer m.m.Unlock()
+	utils.HandleErr(json.NewEncoder(rw).Encode(m.Txs))
+}
+
+func (m *mempool) AddPeerTx(tx *Tx) {
+	m.m.Lock()
+	defer m.m.Unlock()
+	m.Txs = append(m.Txs, tx)
 }

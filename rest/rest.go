@@ -177,19 +177,20 @@ func balance(rw http.ResponseWriter, r *http.Request) {
 }
 
 func mempool(rw http.ResponseWriter, r *http.Request) {
-	utils.HandleErr(json.NewEncoder(rw).Encode(blockchain.Mempool.Txs))
+	blockchain.StatusMempool(rw)
 }
 
 func transactions(rw http.ResponseWriter, r *http.Request) {
 	var payload addTxPayLoad
 	utils.HandleErr(json.NewDecoder(r.Body).Decode(&payload)) // json을 받아서 addTxPayLoad struct로 만들어주는 부분
-	err := blockchain.Mempool.AddTx(payload.To, payload.Amount)
+	tx, err := blockchain.Mempool().AddTx(payload.To, payload.Amount)
 	if err != nil {
 		rw.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(rw).Encode(errorResponse{err.Error()})
 		// if this happens we have to kill this function
 		return
 	}
+	p2p.BroadcastNewTx(tx)
 	rw.WriteHeader(http.StatusCreated)
 }
 

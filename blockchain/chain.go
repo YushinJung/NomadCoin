@@ -198,5 +198,5 @@ func (b *blockchain) AddPeerBlock(block *Block) {
 	persistBlockchain(b)
 	persistBlock(block)
 
-	// mempool problem
+	// mempool problem.
 }
