@@ -16,7 +16,7 @@ const (
 )
 
 type mempool struct {
-	Txs []*Tx
+	Txs map[string]*Tx
 	m   sync.Mutex
 }
 
@@ -25,7 +25,9 @@ var memOnce sync.Once
 
 func Mempool() *mempool {
 	memOnce.Do(func() {
-		m = &mempool{}
+		m = &mempool{
+			Txs: make(map[string]*Tx),
+		}
 	})
 	return m
 }
@@ -168,15 +170,18 @@ func (m *mempool) AddTx(to string, amount int) (*Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	m.Txs = append(m.Txs, tx)
+	m.Txs[tx.ID] = tx
 	return tx, nil
 }
 
 func (m *mempool) TxToConfirm() []*Tx {
 	coinbase := makeCoinbaseTx(wallet.Wallet().Address) // coin 채굴 시
-	txs := m.Txs                                        // mempool의 모든 transaction을
-	txs = append(txs, coinbase)                         // 하나로 합쳐서 전달
-	m.Txs = nil                                         // mempool은 비우자
+	var txs []*Tx                                       // mempool의 모든 transaction을
+	for _, tx := range m.Txs {
+		txs = append(txs, tx)
+	} // 하나로 합쳐서 전달
+	txs = append(txs, coinbase)
+	m.Txs = make(map[string]*Tx) // mempool은 비우자 (nil 선언보단 초기화)
 	return txs
 }
 
@@ -189,5 +194,6 @@ func StatusMempool(rw http.ResponseWriter) {
 func (m *mempool) AddPeerTx(tx *Tx) {
 	m.m.Lock()
 	defer m.m.Unlock()
-	m.Txs = append(m.Txs, tx)
+
+	m.Txs[tx.ID] = tx
 }
