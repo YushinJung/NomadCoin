@@ -29,7 +29,7 @@ func Upgrade(rw http.ResponseWriter, r *http.Request) {
 	// inbox(channel)에 message가 들어올 때, write기능 발생 시킴.
 }
 
-func AddPeer(address, port, openPort string) {
+func AddPeer(address, port, openPort string, broadcast bool) {
 	fmt.Printf("%s wants to connect to port %s\n", openPort, port)
 	formatedPort := utils.Splitter(openPort, ":", 1)
 	// from :4000 is requesting an upgrade at the port :3000
@@ -37,8 +37,12 @@ func AddPeer(address, port, openPort string) {
 	// 원래 nil 이 들어가는 부분에 requestheader들어가서 authenticate을 하는데,
 	// 여기서는 그냥 nil을 쓰자.
 	utils.HandleErr(err)
-	peer := initPeer(conn, address, port)
-	sendNewestBlock(peer)
+	p := initPeer(conn, address, port)
+	if broadcast {
+		broadcastNewPeer(p)
+		return
+	}
+	sendNewestBlock(p)
 }
 
 func BroadcastNewBlock(b *blockchain.Block) {
@@ -54,5 +58,14 @@ func BroadcastNewTx(tx *blockchain.Tx) {
 	defer Peers.m.Unlock()
 	for _, p := range Peers.v {
 		notifyNewTx(tx, p)
+	}
+}
+
+func broadcastNewPeer(newPeer *peer) {
+	for key, p := range Peers.v {
+		if key != newPeer.key {
+			payload := fmt.Sprintf("%s:%s", newPeer.key, p.port)
+			notifyNewPeer(payload, p)
+		}
 	}
 }

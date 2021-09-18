@@ -3,6 +3,7 @@ package p2p
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/YushinJung/NomadCoin/blockchain"
 	"github.com/YushinJung/NomadCoin/utils"
@@ -16,6 +17,7 @@ const (
 	MessageAllBlocksResponse
 	MessageNewBlockNotify
 	MessageNewTxNotify
+	MessageNewPeerNotify
 )
 
 type Message struct {
@@ -59,6 +61,11 @@ func notifyNewTx(tx *blockchain.Tx, p *peer) {
 	p.inbox <- m
 }
 
+func notifyNewPeer(address string, p *peer) {
+	m := makeMessage(MessageNewPeerNotify, address)
+	p.inbox <- m
+}
+
 func hanldeMsg(m *Message, p *peer) {
 	switch m.Kind {
 	// lets unmarshal depending on case
@@ -97,5 +104,12 @@ func hanldeMsg(m *Message, p *peer) {
 		var payload *blockchain.Tx
 		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
 		blockchain.Mempool().AddPeerTx(payload)
+	case MessageNewPeerNotify:
+		var payload string
+		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
+		fmt.Println(payload)
+		parts := strings.Split(payload, ":")
+		fmt.Println(parts[0], parts[1], parts[2], false)
+		AddPeer(parts[0], parts[1], fmt.Sprintf(":%s", parts[2]), false)
 	}
 }
