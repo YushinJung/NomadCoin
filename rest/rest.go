@@ -117,7 +117,8 @@ func blocks(rw http.ResponseWriter, r *http.Request) {
 		// json.NewEncoder(rw).Encode(blockchain.GetBlockchain().AllBlocks())
 		json.NewEncoder(rw).Encode(blockchain.Blocks(blockchain.Blockchain()))
 	case "POST":
-		blockchain.Blockchain().AddBlock()
+		newBlock := blockchain.Blockchain().AddBlock()
+		p2p.BroadcastNewBlock(newBlock)
 		rw.WriteHeader(http.StatusCreated) // header로 created 됐다고 알려주는 것
 	}
 }
@@ -155,7 +156,8 @@ func loggerMiddelware(next http.Handler) http.Handler {
 }
 
 func status(rw http.ResponseWriter, r *http.Request) {
-	json.NewEncoder(rw).Encode(blockchain.Blockchain())
+	blockchain.Status(blockchain.Blockchain(), rw)
+	// blockchain자체를 조작하는 거 보단 이를 특정 기능을 하는 함수에 전달하는게 좋을 듯
 }
 
 func balance(rw http.ResponseWriter, r *http.Request) {
