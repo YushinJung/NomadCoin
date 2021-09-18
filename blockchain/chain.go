@@ -30,7 +30,7 @@ func (b *blockchain) restore(data []byte) {
 	utils.FromBytes(b, data)
 }
 
-func (b *blockchain) AddBlock() {
+func (b *blockchain) AddBlock() *Block {
 	block := createBlock(b.NewestHash, b.Height+1, getDifficulty(b))
 	// by adding block we should update newesthash and height
 	b.NewestHash = block.Hash
@@ -38,6 +38,7 @@ func (b *blockchain) AddBlock() {
 	b.CurrentDifficulty = block.Difficulty
 	// need to update db
 	persistBlockchain(b)
+	return block
 }
 
 func persistBlockchain(b *blockchain) {
@@ -184,4 +185,18 @@ func (b *blockchain) Replace(newBlocks []*Block) {
 	for _, block := range newBlocks {
 		persistBlock(block)
 	}
+}
+
+func (b *blockchain) AddPeerBlock(block *Block) {
+	b.m.Lock()
+	defer b.m.Unlock()
+
+	b.Height += 1
+	b.CurrentDifficulty = block.Difficulty
+	b.NewestHash = block.Hash
+
+	persistBlockchain(b)
+	persistBlock(block)
+
+	// mempool problem
 }

@@ -14,6 +14,7 @@ const (
 	MessageNewestBlock MessageKind = iota
 	MessageAllBlocksRequest
 	MessageAllBlocksResponse
+	MessageNewBlockNotify
 )
 
 type Message struct {
@@ -47,6 +48,11 @@ func sendAllBlocks(p *peer) {
 	p.inbox <- m
 }
 
+func notifyNewBlock(b *blockchain.Block, p *peer) {
+	m := makeMessage(MessageNewBlockNotify, b)
+	p.inbox <- m
+}
+
 func hanldeMsg(m *Message, p *peer) {
 	switch m.Kind {
 	// lets unmarshal depending on case
@@ -77,5 +83,9 @@ func hanldeMsg(m *Message, p *peer) {
 		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
 		blockchain.Blockchain().Replace(payload)
 		// recieved all blocks
+	case MessageNewBlockNotify:
+		var payload *blockchain.Block
+		utils.HandleErr(json.Unmarshal(m.Payload, &payload))
+		blockchain.Blockchain().AddPeerBlock(payload)
 	}
 }
